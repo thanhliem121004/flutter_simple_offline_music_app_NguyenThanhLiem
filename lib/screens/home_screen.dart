@@ -7,7 +7,7 @@ import '../services/permission_service.dart';
 import '../services/playlist_service.dart';
 import '../services/sample_song_service.dart';
 import '../widgets/mini_player.dart';
-import '../utils/duration_formatter.dart';
+import '../widgets/song_tile.dart';
 import 'all_songs_screen.dart';
 import 'playlist_screen.dart';
 import 'search_screen.dart';
@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<SongModel> _songs = [];
   bool _isLoading = true;
   bool _hasPermission = false;
+  String _sortBy = 'title';
 
   @override
   void initState() {
@@ -62,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _songs = songs;
         });
+        _sortSongs(_sortBy);
       }
     } catch (e) {
       if (mounted) {
@@ -77,10 +79,35 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _songs = samples;
         });
+        _sortSongs(_sortBy);
       }
     } catch (e) {
       debugPrint('Error loading sample songs: $e');
     }
+  }
+
+  void _sortSongs(String sortBy) {
+    setState(() {
+      _sortBy = sortBy;
+      switch (sortBy) {
+        case 'title':
+          _songs.sort((a, b) => a.title.compareTo(b.title));
+          break;
+        case 'artist':
+          _songs.sort((a, b) => a.artist.compareTo(b.artist));
+          break;
+        case 'album':
+          _songs.sort((a, b) => (a.album ?? '').compareTo(b.album ?? ''));
+          break;
+        case 'duration':
+          _songs.sort((a, b) {
+            final aDur = a.duration?.inMilliseconds ?? 0;
+            final bDur = b.duration?.inMilliseconds ?? 0;
+            return aDur.compareTo(bDur);
+          });
+          break;
+      }
+    });
   }
 
   @override
@@ -137,6 +164,61 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.white,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort, color: Colors.grey),
+            color: const Color(0xFF282828),
+            onSelected: _sortSongs,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'title',
+                child: Row(
+                  children: [
+                    if (_sortBy == 'title')
+                      const Icon(Icons.check, color: Color(0xFF1DB954), size: 18),
+                    if (_sortBy == 'title') const SizedBox(width: 8),
+                    Text(_sortBy == 'title' ? '  Title' : 'Title',
+                        style: const TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'artist',
+                child: Row(
+                  children: [
+                    if (_sortBy == 'artist')
+                      const Icon(Icons.check, color: Color(0xFF1DB954), size: 18),
+                    if (_sortBy == 'artist') const SizedBox(width: 8),
+                    Text(_sortBy == 'artist' ? '  Artist' : 'Artist',
+                        style: const TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'album',
+                child: Row(
+                  children: [
+                    if (_sortBy == 'album')
+                      const Icon(Icons.check, color: Color(0xFF1DB954), size: 18),
+                    if (_sortBy == 'album') const SizedBox(width: 8),
+                    Text(_sortBy == 'album' ? '  Album' : 'Album',
+                        style: const TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'duration',
+                child: Row(
+                  children: [
+                    if (_sortBy == 'duration')
+                      const Icon(Icons.check, color: Color(0xFF1DB954), size: 18),
+                    if (_sortBy == 'duration') const SizedBox(width: 8),
+                    Text(_sortBy == 'duration' ? '  Duration' : 'Duration',
+                        style: const TextStyle(color: Colors.white)),
+                  ],
                 ),
               ),
             ],
@@ -221,59 +303,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       itemBuilder: (context, index) {
         final song = _songs[index];
-        return InkWell(
+        return SongTile(
+          song: song,
           onTap: () {
             context.read<AudioProvider>().setPlaylist(_songs, index);
           },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF282828),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.music_note, color: Colors.grey),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        song.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 15,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        song.artist,
-                        style: const TextStyle(color: Colors.grey, fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                if (song.duration != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Text(
-                      DurationFormatter.format(song.duration!),
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          onAddToPlaylist: () {
+            _showAddToPlaylistDialog(song);
+          },
         );
       },
     );

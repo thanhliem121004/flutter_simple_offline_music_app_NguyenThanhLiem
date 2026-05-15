@@ -113,16 +113,13 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
   }
 
   void _openPlaylistDetail(String playlistId, String playlistName) {
-    final playlistProvider = context.read<PlaylistProvider>();
-    final songs = playlistProvider.getPlaylistSongs(playlistId, _allSongs);
-
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => _PlaylistDetailScreen(
           playlistId: playlistId,
           playlistName: playlistName,
-          songs: songs,
+          allSongs: _allSongs,
         ),
       ),
     );
@@ -180,17 +177,22 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
 class _PlaylistDetailScreen extends StatelessWidget {
   final String playlistId;
   final String playlistName;
-  final List<SongModel> songs;
+  final List<SongModel> allSongs;
 
   const _PlaylistDetailScreen({
     required this.playlistId,
     required this.playlistName,
-    required this.songs,
+    required this.allSongs,
   });
+
+  List<SongModel> _getSongs(PlaylistProvider provider) {
+    return provider.getPlaylistSongs(playlistId, allSongs);
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<PlaylistProvider>();
+    final songs = _getSongs(provider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF191414),
@@ -206,6 +208,10 @@ class _PlaylistDetailScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () => _showRenameDialog(context, provider),
+          ),
+          IconButton(
+            icon: const Icon(Icons.playlist_add, color: Colors.white),
+            onPressed: () => _showAddSongsDialog(context, provider, songs),
           ),
           IconButton(
             icon: const Icon(Icons.delete, color: Colors.red),
@@ -350,6 +356,82 @@ class _PlaylistDetailScreen extends StatelessWidget {
               child: const Text('Rename', style: TextStyle(color: Color(0xFF1DB954))),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void _showAddSongsDialog(BuildContext context, PlaylistProvider provider, List<SongModel> currentSongs) {
+    final currentSongIds = currentSongs.map((s) => s.id).toSet();
+    final availableSongs = allSongs.where((s) => !currentSongIds.contains(s.id)).toList();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF282828),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.3,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.playlist_add, color: Color(0xFF1DB954), size: 24),
+                      const SizedBox(width: 8),
+                      const Text('Add Songs', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.grey),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                if (availableSongs.isEmpty)
+                  const Expanded(
+                    child: Center(
+                      child: Text('All songs already in playlist', style: TextStyle(color: Colors.grey)),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: availableSongs.length,
+                      separatorBuilder: (_, _) => const Divider(
+                        height: 1,
+                        color: Color(0xFF191414),
+                        indent: 72,
+                      ),
+                      itemBuilder: (context, index) {
+                        final song = availableSongs[index];
+                        return SongTile(
+                          song: song,
+                          onTap: () {
+                            provider.addSongToPlaylist(playlistId, song.id);
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('${song.title} added to playlist'),
+                                backgroundColor: const Color(0xFF1DB954),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            );
+          },
         );
       },
     );

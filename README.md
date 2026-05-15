@@ -99,5 +99,5 @@ Ví dụ:
 
 ## Video giới thiệu
 
-Link video: _(chèn link Google Drive sau khi quay và upload)_
+[![Video Demo](https://img.shields.io/badge/Google%20Drive-Watch%20Video-blue)](https://drive.google.com/file/d/1VDKMfFarrUA4nhOjmB0bxwHQxFL9KSDO/view?usp=sharing)
 
