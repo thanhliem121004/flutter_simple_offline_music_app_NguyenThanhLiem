@@ -2,8 +2,6 @@
 
 **Sinh viên:** Nguyễn Thanh Liêm  
 **MSSV:** 2224802010267  
-**Môn học:** Thực hành Đồ họa và Nhập môn Tương tác  
-**Giảng viên:** Cô Nguyễn Thị Hồng  
 **Ngày hoàn thành:** 16/05/2026
 
 ---
